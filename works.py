@@ -21,7 +21,13 @@ def download_civitai_images(output_dir="downloaded_images"):
     driver.maximize_window()
 
     query = input("\nEnter a search query (leave blank if none): ")
+
+    tags = [
+        {"name": "photorealistic", "url": "https://civitai.com/images?tags=172"},
+    ]
+
     civitai_url = f"https://civitai.com/images?q={query}" if query != "" and query != None else "https://civitai.com/images"
+    civitai_url = tags[0]["url"] if query == "tags" or query == None else civitai_url
 
     try:
         print(f"Loading {civitai_url}...")
@@ -172,7 +178,11 @@ def download_single_image(img, headers, output_dir, processed_urls):
         if not any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
             filename += '.jpg'
 
-        filepath = os.path.join(output_dir, filename)
+        date_folder = time.strftime("%m%d%Y")
+        dated_output_dir = os.path.join(output_dir, date_folder)
+        os.makedirs(dated_output_dir, exist_ok=True)
+
+        filepath = os.path.join(dated_output_dir, filename)
 
         print(f"\nAttempting to download image: {filename}")
         if os.path.exists(filepath):
