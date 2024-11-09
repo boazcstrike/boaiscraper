@@ -27,11 +27,37 @@ def download_civitai_images(output_dir="downloaded_images"):
     ]
 
     civitai_url = f"https://civitai.com/images?q={query}" if query != "" and query != None else "https://civitai.com/images"
-    civitai_url = tags[0]["url"] if query == "tags" or query == None else civitai_url
+    # civitai_url = tags[0]["url"] if query == "tags" or query == None else civitai_url
 
     try:
         print(f"Loading {civitai_url}...")
         driver.get(civitai_url)
+
+        try:
+            print("Waiting for filter button...")
+            filter_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Filters')]"))
+            )
+            print("Found filter button, clicking...")
+            filter_button.click()
+
+            print("Waiting for filter dialog...")
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[role='dialog']"))
+            )
+
+            print("Waiting for month option...")
+            month_option = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//label[contains(text(), 'Month')]"))
+            )
+            print("Found month option, clicking...")
+            month_option.click()
+
+            print("Waiting 4 seconds for filter to apply...")
+            time.sleep(4)  # Wait for the filter to apply
+            print("Filter applied successfully")
+        except Exception as e:
+            print(f"Error applying time filter: {str(e)}")
 
         # Update headers with authentication and cookies
         headers = {
@@ -50,8 +76,8 @@ def download_civitai_images(output_dir="downloaded_images"):
         while True:
             print("\n=== Starting new scroll cycle ===")
             # Scroll logic for infinite scroll within container
-            for i in range(5):
-                print(f"Scroll attempt {i+1}/5 within cycle")
+            for i in range(6):
+                print(f"Scroll attempt {i+1}/6 within cycle")
 
                 # Get current scroll position and height
                 last_height = driver.execute_script("return arguments[0].scrollHeight", main_element)
@@ -124,6 +150,10 @@ def download_civitai_images(output_dir="downloaded_images"):
                     print(f"Scroll position: {new_scroll}/{new_height}")
 
                     if new_scroll >= new_height - main_element.size['height']:
+                        print("Reached the bottom of the container")
+                        break
+
+                    if new_height ==  120000:
                         print("Reached the bottom of the container")
                         break
 
