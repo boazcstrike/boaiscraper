@@ -1,12 +1,12 @@
+import os
+import requests
+import time
+from urllib.parse import urlparse, unquote
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import requests
-import os
-import time
-from urllib.parse import urlparse, unquote
-import json
+
 
 def download_civitai_images(output_dir="downloaded_images"):
     print("Starting download process...")
@@ -26,8 +26,9 @@ def download_civitai_images(output_dir="downloaded_images"):
         {"name": "photorealistic", "url": "https://civitai.com/images?tags=172"},
     ]
 
-    civitai_url = f"https://civitai.com/images?q={query}" if query != "" and query != None else "https://civitai.com/images"
+    # civitai_url = f"https://civitai.com/images?q={query}" if query != "" and query != None else "https://civitai.com/images"
     # civitai_url = tags[0]["url"] if query == "tags" or query == None else civitai_url
+    civitai_url = "https://civitai.com/videos"
 
     try:
         print(f"Loading {civitai_url}...")
@@ -92,7 +93,7 @@ def download_civitai_images(output_dir="downloaded_images"):
                 """, main_element)
 
                 # Wait for content to load
-                time.sleep(2)
+                time.sleep(10)
 
                 # Check if we've reached the bottom
                 new_height = driver.execute_script("return arguments[0].scrollHeight", main_element)
@@ -109,8 +110,20 @@ def download_civitai_images(output_dir="downloaded_images"):
                     break
 
             print("\nSearching for images...")
-            images = driver.find_elements(By.TAG_NAME, "img")
-            print(f"Found {len(images)} total image elements")
+            if 'video' in civitai_url:
+                videos = driver.find_elements(By.TAG_NAME, "video")
+                images = []
+                for video in videos:
+                    sources = video.find_elements(By.TAG_NAME, "source")
+                    for source in sources:
+                        src = source.get_attribute('src')
+                        if src and src.endswith('.mp4'):
+                            images.append(source)
+                            break
+            else:
+                images = driver.find_elements(By.TAG_NAME, "img")
+
+            print(f"Found {len(images)} total <img ...> <video ...> elements")
 
             all_images_downloaded = True
             new_images = 0
@@ -124,7 +137,6 @@ def download_civitai_images(output_dir="downloaded_images"):
                     new_images += 1
 
             if all_images_downloaded:
-                # All visible images are already downloaded, scroll for more
                 for i in range(5):
                     print(f"Scroll attempt {i+1}/5 within cycle")
 
@@ -153,7 +165,7 @@ def download_civitai_images(output_dir="downloaded_images"):
                         print("Reached the bottom of the container")
                         break
 
-                    if new_height ==  120000:
+                    if new_height == 120000:  # i set this because this is too much image data for me
                         print("Reached the bottom of the container")
                         break
 
@@ -205,8 +217,11 @@ def download_single_image(img, headers, output_dir, processed_urls):
         parsed_url = urlparse(img_url)
         filename = unquote(os.path.basename(parsed_url.path))
 
-        if not any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
-            filename += '.jpg'
+        if not any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4']):
+            if 'mp4' in img_url.lower():
+                filename += '.mp4'
+            else:
+                filename += '.jpg'
 
         date_folder = time.strftime("%m%d%Y")
         dated_output_dir = os.path.join(output_dir, date_folder)
