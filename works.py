@@ -155,22 +155,26 @@ def download_civitai_images(output_dir="downloaded_images"):
             print("Found filter button, clicking...")
             filter_button.click()
 
-            print("Waiting for filter dialog...")
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "[role='dialog']"))
-            )
 
+            # starting here - 3-14-2025 these dont work
             print("Waiting for month option...")
             month_option = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//input[@value='Month']"))
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//input[@role='radio' and @value='Month']")
+                )
             )
             print("Found month option, trying to click...")
             month_option.click()
+
+            print("trying period filter again...")
+            print("Waiting for month option...")
             month_option = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//label[contains(text(), 'Month')]"))
+                EC.element_to_be_clickable((By.XPATH, "//label[@for='mantine-r5f']"))
             )
-            print("Found month option, trying to click...")
+            print("Found month option, clicking...")
             month_option.click()
+            # end here - 3-14-2025 these dont work
+
 
             print("Waiting 4 seconds for filter to apply...")
             time.sleep(4)  # Wait for the filter to apply
