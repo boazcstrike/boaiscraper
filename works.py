@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+from dotenv import load_dotenv
 
 from urllib.parse import urlparse, unquote
 from selenium import webdriver
@@ -161,9 +162,14 @@ def download_civitai_images(output_dir="downloaded_images"):
 
             print("Waiting for month option...")
             month_option = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@value='Month']"))
+            )
+            print("Found month option, trying to click...")
+            month_option.click()
+            month_option = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, "//label[contains(text(), 'Month')]"))
             )
-            print("Found month option, clicking...")
+            print("Found month option, trying to click...")
             month_option.click()
 
             print("Waiting 4 seconds for filter to apply...")
@@ -378,4 +384,5 @@ def download_single_image(img, headers, output_dir, processed_urls):
         return False
 
 if __name__ == "__main__":
+    load_dotenv()
     download_civitai_images()
