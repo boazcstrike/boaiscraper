@@ -1,6 +1,8 @@
 # Bo's AI Scraper Tools
 
-## Works
+## for educational purposes only
+
+## run Works.py
 
 ### Civitai Image Scraper
 

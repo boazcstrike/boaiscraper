@@ -1,11 +1,117 @@
 import os
 import requests
 import time
+
 from urllib.parse import urlparse, unquote
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+class BoAIScraper():
+    def __init__(self, driver):
+        self.driver = driver
+
+    def set_cookies(self):
+        """cookies updated as of March 14, 2025"""
+        try:
+            cookies = [
+                {
+                    "name": "__Secure-civitai-token",
+                    "value": os.getenv("CIVIT_TOKEN"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": True,
+                    "httpOnly": True,
+                },
+                {
+                    "name": "__Secure-next-auth.callback-url",
+                    "value": os.getenv("NEXT_AUTH_CALLBACK_URL"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": True,
+                    "httpOnly": True,
+                },
+                {
+                    "name": "__eoi",
+                    "value": os.getenv("EOI"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": True,
+                    "httpOnly": False,
+                },
+                {
+                    "name": "__gads",
+                    "value": os.getenv("GADS"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": True,
+                    "httpOnly": False,
+                },
+                {
+                    "name": "__gpi",
+                    "value": os.getenv("GPI"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": True,
+                    "httpOnly": False,
+                },
+                {
+                    "name": "_sharedID",
+                    "value": os.getenv("SHARED_ID"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": False,
+                    "httpOnly": False,
+                },
+                {
+                    "name": "_sharedID_cst",
+                    "value": os.getenv("SHARED_ID_CST"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": False,
+                    "httpOnly": False,
+                },
+                {
+                    "name": "_sharedID_last",
+                    "value": os.getenv("SHARED_ID_LAST"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": False,
+                    "httpOnly": False,
+                },
+                {
+                    "name": "cto_bundle",
+                    "value": os.getenv("CTO_BUNDLE"),
+                    "domain": ".civitai.com",
+                    "path": "/",
+                    "secure": True,
+                    "httpOnly": False,
+                }
+            ]
+            for cookie in cookies:
+                print(f"Setting cookie: {cookie['name']} = {cookie['value']}")
+                self.driver.add_cookie(cookie)
+            print("Cookies set successfully.")
+        except Exception as e:
+            print(f"Error setting cookies: {str(e)}")
+
+    def authenticate_civit(self):
+        self.set_cookies()
+        # self.navigate_to_login()
+
+    def navigate_to_login(self):
+        try:
+            print("Waiting for sign in button...")
+            sign_in_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//a[@href='/login?returnUrl=/']")
+                )
+            )
+            print("Found sign in button, clicking...")
+            sign_in_button.click()
+        except Exception as e:
+            print(f"Error clicking sign in button: {str(e)}")
 
 
 def download_civitai_images(output_dir="downloaded_images"):
@@ -26,13 +132,19 @@ def download_civitai_images(output_dir="downloaded_images"):
         {"name": "photorealistic", "url": "https://civitai.com/images?tags=172"},
     ]
 
-    # civitai_url = f"https://civitai.com/images?q={query}" if query != "" and query != None else "https://civitai.com/images"
+    civitai_url = f"https://civitai.com/images?q={query}" if query != "" and query != None else "https://civitai.com/images"
     # civitai_url = tags[0]["url"] if query == "tags" or query == None else civitai_url
-    civitai_url = "https://civitai.com/videos"
+    # civitai_url = "https://civitai.com/videos"
 
     try:
         print(f"Loading {civitai_url}...")
         driver.get(civitai_url)
+        ai = BoAIScraper(driver=driver)
+
+        ai.authenticate_civit()
+        driver.refresh()
+        print("Website reloaded successfully.")
+        time.sleep(2)
 
         try:
             print("Waiting for filter button...")
@@ -62,7 +174,24 @@ def download_civitai_images(output_dir="downloaded_images"):
 
         # Update headers with authentication and cookies
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "en-US,en;q=0.9,fil;q=0.8,zh-TW;q=0.7,zh;q=0.6,it;q=0.5",
+            "Content-Type": "application/json",
+            "Priority": "u=1, i",
+            "Referer": "https://civitai.com/images",
+            "Sec-Ch-Ua": '"Chromium";v="134", "NotA;Brand";v="24", "Google Chrome";v="134"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+            "X-Client": "web",
+            "X-Client-Date": "1741877879835",
+            "X-Client-Version": "5.0.552",
+            # there is one more, unsure what it looks like, unsure if needed
+            # "X-Fingerprint": "xxx"
         }
 
         processed_urls = set()
@@ -216,13 +345,12 @@ def download_single_image(img, headers, output_dir, processed_urls):
 
         parsed_url = urlparse(img_url)
         filename = unquote(os.path.basename(parsed_url.path))
-
-        if not any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4']):
-            if 'mp4' in img_url.lower():
-                filename += '.mp4'
-            else:
-                filename += '.jpg'
-
+        file_exts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4']
+        if not any(filename.lower().endswith(ext) for ext in file_exts):
+            for file_ext in file_exts:
+                if file_ext in img_url.lower():
+                    filename += file_ext
+                
         date_folder = time.strftime("%m%d%Y")
         dated_output_dir = os.path.join(output_dir, date_folder)
         os.makedirs(dated_output_dir, exist_ok=True)
